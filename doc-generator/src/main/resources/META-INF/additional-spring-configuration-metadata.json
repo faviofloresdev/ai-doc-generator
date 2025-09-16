@@ -1,0 +1,27 @@
+{"properties": [
+  {
+    "name": "gemini.api.key",
+    "type": "java.lang.String",
+    "description": "A description for 'gemini.api.key'"
+  },
+  {
+    "name": "vertex.project-id",
+    "type": "java.lang.String",
+    "description": "A description for 'vertex.project-id'"
+  },
+  {
+    "name": "vertex.location",
+    "type": "java.lang.String",
+    "description": "A description for 'vertex.location'"
+  },
+  {
+    "name": "vertex.model",
+    "type": "java.lang.String",
+    "description": "A description for 'vertex.model'"
+  },
+  {
+    "name": "lineamientosTablas.list",
+    "type": "java.util.List",
+    "description": "A description for 'lineamientosTablas.list'"
+  }
+]}
