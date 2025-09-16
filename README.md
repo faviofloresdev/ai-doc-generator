@@ -1,10 +1,8 @@
-# Proyecto de Documentación Automatizada de Cambios
+# Proyecto de documentación automatizada de cambios
 
 Este proyecto permite generar documentación técnica de cambios en el código y procesos a partir de información de **Jira**, **Git** y **Confluence**, utilizando inteligencia artificial (IA) para estructurar el contenido en Markdown listo para QA y documentación interna.
 
----
-
-## 🔹 Funcionalidad
+# Funcionalidad
 
 1. **Obtención de datos desde Jira**:  
    Extrae el resumen y la descripción de una Historia de Usuario (HU) o ticket de Jira.
@@ -30,9 +28,7 @@ Este proyecto permite generar documentación técnica de cambios en el código y
    - Objetos Afectados (Java y Base de Datos)
    - Modelo Entidad Relación del Proceso
 
----
-
-## 🔹 Requisitos
+# Requisitos
 
 - **Java 17** o superior
 - **Maven 3.8+**
@@ -43,13 +39,11 @@ Este proyecto permite generar documentación técnica de cambios en el código y
   - Vertex AI (Google) para generar contenido con IA
 - Configuración de credenciales (Jira, Git, Confluence, Vertex AI)
 
----
-
-## 🔹 Configuración
+# Configuración
 
 El proyecto utiliza `application.properties` o `application.yml` para manejar configuraciones y credenciales:
 
-### Ejemplo `application.properties`
+## Ejemplo `application.properties`
 
 ```properties
 # Git
@@ -77,27 +71,27 @@ gemini.api.key=tu_api_key
 
 # Prompt personalizado
 documentation.prompt=Plantilla de prompt para la IA con placeholders
+```
 
-
-## Uso
-### 1. Ejecutar localmente
+# Uso
+## 1. Ejecutar localmente
 
 Clonar el repositorio:
-
+```
 git clone https://github.com/usuario/proyecto-documentacion.git
 cd proyecto-documentacion
-
+```
 
 Construir el proyecto con Maven:
-
+```
 mvn clean install
-
+```
 
 Ejecutar la aplicación:
-
+```
 mvn spring-boot:run
-
-### 2. Interfaz Web
+```
+## 2. Interfaz Web
 
 Una vez en ejecución, la aplicación expone un formulario web para generar documentación:
 
@@ -105,28 +99,23 @@ URL: http://localhost:8080/docForm
 
 Campos a completar:
 
-Historia de Usuario (Jira ID)
-
-Branch de Git
-
-Proceso
-
-Complejidad
-
-Menú
-
-Autor
-
-HU Relacionados
+- Historia de Usuario (Jira ID)
+- Branch de Git
+- Proceso
+- Complejidad
+- Menú
+- Autor
+- HU Relacionados
 
 El formulario obtiene automáticamente la información de Jira, Git y Confluence.
 
 Al enviar, genera un Markdown completo listo para QA.
 
-### 3. Uso desde código
+## 3. Uso desde código
 
 Se puede invocar el servicio directamente:
 
+```
 @Autowired
 private GeminiService geminiService;
 
@@ -140,8 +129,10 @@ String markdown = geminiService.generateMarkdown(
         autor,
         huRelacionados
 );
+```
 
-## Estructura del Proyecto
+# Estructura del Proyecto
+```
 src/
  ├─ main/
  │   ├─ java/com/agent/sql/
@@ -153,25 +144,20 @@ src/
  │       ├─ application.properties
  │       └─ templates/       # HTML para formularios
  └─ test/                     # Pruebas unitarias
+```
+# Contribución
 
-### Contribución
+- Hacer fork del proyecto
+- Crear branch con nueva funcionalidad o corrección
+- Abrir Pull Request explicando cambios
+- Revisar que los tests pasen antes de merge
 
-Hacer fork del proyecto
-
-Crear branch con nueva funcionalidad o corrección
-
-Abrir Pull Request explicando cambios
-
-Revisar que los tests pasen antes de merge
-
-### Licencia
+# Licencia
 
 Este proyecto está bajo licencia MIT.
 
-### Notas
+# Notas
 
-La aplicación no almacena credenciales en el código; todas se manejan por propiedades o variables de entorno.
-
-La IA requiere conexión estable a Vertex AI; errores 503 indican problemas temporales de servicio.
-
-Se recomienda usar un branch limpio para extraer commits de una HU específica
+- La aplicación no almacena credenciales en el código; todas se manejan por propiedades o variables de entorno.
+- La IA requiere conexión estable a Vertex AI; errores 503 indican problemas temporales de servicio.
+- Se recomienda usar un branch limpio para extraer commits de una HU específica
