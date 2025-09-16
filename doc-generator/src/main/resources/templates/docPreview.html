@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Markdown Preview</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <style>
+        body {
+            display: flex;
+            gap: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .editor, .preview {
+            width: 50%;
+        }
+        textarea {
+            width: 100%;
+            height: 80vh;
+            font-family: monospace;
+        }
+        .markdown-body {
+            border: 1px solid #ddd;
+            padding: 20px;
+            height: 80vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="editor">
+    <h2>Markdown generado</h2>
+    <textarea id="markdownContent" readonly th:text="${markdown}"></textarea>
+</div>
+<div class="preview">
+    <h2>Vista previa</h2>
+    <div id="preview" class="markdown-body"></div>
+</div>
+
+<script>
+    const textarea = document.getElementById("markdownContent");
+    const preview = document.getElementById("preview");
+
+    function renderMarkdown() {
+        preview.innerHTML = marked.parse(textarea.value);
+    }
+
+    renderMarkdown();
+</script>
+</body>
+</html>
