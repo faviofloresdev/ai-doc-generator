@@ -8,6 +8,7 @@ import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
@@ -19,6 +20,7 @@ import com.agent.doc.generator.service.GitService;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,19 +50,16 @@ public class GitServiceImpl implements GitService {
 
         try (Git git = Git.open(new File(localRepoPath))) {
 
-            // Hacer fetch del remoto
+            // Hacer fetch remoto
             git.fetch()
                .setRemote("origin")
                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, token))
                .call();
 
-            // Verificar si el branch local existe
+            // Checkout del branch
             boolean branchExists = git.getRepository().findRef(branchName) != null;
-
             if (branchExists) {
-                git.checkout()
-                   .setName(branchName)
-                   .call();
+                git.checkout().setName(branchName).call();
             } else {
                 git.checkout()
                    .setCreateBranch(true)
@@ -69,29 +68,54 @@ public class GitServiceImpl implements GitService {
                    .call();
             }
 
+            Repository repo = git.getRepository();
+
+            // Recorrer commits
             Iterable<RevCommit> commits = git.log().call();
-            for (RevCommit commit : commits) {
-                String message = commit.getFullMessage();
-                if (message.contains(huId)) {
-                    sb.append("Commit: ").append(commit.getName()).append("\n")
-                      .append("Mensaje: ").append(message).append("\n\n");
+            try (RevWalk revWalk = new RevWalk(repo)) {
+                for (RevCommit commit : commits) {
+                    String message = commit.getFullMessage();
 
-                    // Obtener cambios de archivos
-                    try (DiffFormatter diffFormatter = new DiffFormatter(new ByteArrayOutputStream())) {
-                        diffFormatter.setRepository(git.getRepository());
-                        diffFormatter.setDiffComparator(RawTextComparator.DEFAULT);
-                        diffFormatter.setDetectRenames(true);
+                    if (message.contains(huId)) {
+                        sb.append("Commit: ").append(commit.getName()).append("\n")
+                          .append("Autor: ").append(commit.getAuthorIdent().getName())
+                          .append(" <").append(commit.getAuthorIdent().getEmailAddress()).append(">\n")
+                          .append("Fecha: ").append(commit.getAuthorIdent().getWhen()).append("\n")
+                          .append("Mensaje: ").append(message).append("\n\n");
 
-                        RevCommit parent = commit.getParentCount() > 0 ? commit.getParent(0) : null;
-                        if (parent != null) {
-                            List<DiffEntry> diffs = diffFormatter.scan(parent.getTree(), commit.getTree());
-                            for (DiffEntry diff : diffs) {
-                                sb.append("Archivo: ").append(diff.getChangeType())
-                                  .append(" -> ").append(diff.getNewPath()).append("\n");
+                        if (commit.getParentCount() > 0) {
+                            RevCommit parent = revWalk.parseCommit(commit.getParent(0).getId());
+
+                            try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+                                 DiffFormatter diffFormatter = new DiffFormatter(out)) {
+
+                                diffFormatter.setRepository(repo);
+                                diffFormatter.setDiffComparator(RawTextComparator.DEFAULT);
+                                diffFormatter.setDetectRenames(true);
+
+                                List<DiffEntry> diffs = diffFormatter.scan(
+                                        parent.getTree(),
+                                        commit.getTree()
+                                );
+
+                                for (DiffEntry diff : diffs) {
+                                    sb.append("Archivo: ")
+                                      .append(diff.getChangeType())
+                                      .append(" -> ")
+                                      .append(diff.getNewPath())
+                                      .append("\n");
+
+                                    out.reset();
+                                    diffFormatter.format(diff);
+                                    sb.append("Diff:\n")
+                                      .append(out.toString(StandardCharsets.UTF_8))
+                                      .append("\n");
+                                }
                             }
                         }
+
+                        sb.append("\n---\n\n");
                     }
-                    sb.append("\n---\n\n");
                 }
             }
 
@@ -104,45 +128,4 @@ public class GitServiceImpl implements GitService {
     }
 
 
-    private String getDiffs(Git git, String branch) throws Exception {
-        Repository repo = git.getRepository();
-        git.checkout().setName(branch).call();
-
-        Iterable<RevCommit> commits = git.log().setMaxCount(2).call();
-        RevCommit newest = null;
-        RevCommit previous = null;
-        for (RevCommit c : commits) {
-            if (newest == null) newest = c;
-            else { previous = c; break; }
-        }
-
-        if (newest == null || previous == null) {
-            return "⚠️ No hay suficientes commits para comparar.";
-        }
-
-        try (ObjectReader reader = repo.newObjectReader()) {
-            CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
-            oldTreeIter.reset(reader, previous.getTree());
-
-            CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
-            newTreeIter.reset(reader, newest.getTree());
-
-            List<DiffEntry> diffs = git.diff()
-                    .setNewTree(newTreeIter)
-                    .setOldTree(oldTreeIter)
-                    .call();
-
-            StringBuilder sb = new StringBuilder("Cambios en la rama " + branch + ":\n");
-            try (DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
-                df.setRepository(repo);
-                for (DiffEntry diff : diffs) {
-                    sb.append(diff.getChangeType())
-                      .append(": ")
-                      .append(diff.getNewPath())
-                      .append("\n");
-                }
-            }
-            return sb.toString();
-        }
-    }
 }
