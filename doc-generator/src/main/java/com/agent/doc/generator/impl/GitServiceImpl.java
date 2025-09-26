@@ -49,6 +49,8 @@ public class GitServiceImpl implements GitService {
         StringBuilder sb = new StringBuilder();
 
         try (Git git = Git.open(new File(localRepoPath))) {
+        	
+        	syncBranchWithRemote(git, branchName);
 
             // Hacer fetch remoto
             git.fetch()
@@ -127,5 +129,32 @@ public class GitServiceImpl implements GitService {
         return sb.toString();
     }
 
+    private void syncBranchWithRemote(Git git, String branchName) throws GitAPIException, IOException {
+        // 1. Traer cambios desde remoto
+        git.fetch()
+           .setRemote("origin")
+           .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, token))
+           .call();
+
+        // 2. Verificar si el branch existe localmente
+        boolean branchExists = git.getRepository().findRef(branchName) != null;
+
+        if (branchExists) {
+            git.checkout().setName(branchName).call();
+        } else {
+            // Crear el branch desde remoto
+            git.checkout()
+               .setCreateBranch(true)
+               .setName(branchName)
+               .setStartPoint("refs/remotes/origin/" + branchName)
+               .call();
+        }
+
+        // 3. Forzar que el branch local se alinee con remoto
+        git.reset()
+           .setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD)
+           .setRef("origin/" + branchName)
+           .call();
+    }
 
 }
